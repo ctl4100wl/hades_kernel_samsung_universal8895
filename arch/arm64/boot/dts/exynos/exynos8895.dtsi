@@ -185,9 +185,9 @@
 			logical-id = <0>;
 			enable-method = "psci";
 			cpu-idle-states = <&BOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_1 &&CLUSTER_COST_1>;
+			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
 			#cooling-cells = <2>; /* min followed by max */
-			current = <60240 40410 27260 20180 16850 13710 10710 8290 6060>;
+			current = <117650 94120 75300 60240 40410 27260 20180 16850 13710 10710 8290 6060>;
 		};
 		cpu@101 {
 			device_type = "cpu";
@@ -196,8 +196,8 @@
 			logical-id = <1>;
 			enable-method = "psci";
 			cpu-idle-states = <&BOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_1 &&CLUSTER_COST_1>;
-			current = <60240 40410 27260 20180 16850 13710 10710 8290 6060>;
+			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
+			current = <117650 94120 75300 60240 40410 27260 20180 16850 13710 10710 8290 6060>;
 		};
 		cpu@102 {
 			device_type = "cpu";
@@ -206,8 +206,8 @@
 			logical-id = <2>;
 			enable-method = "psci";
 			cpu-idle-states = <&BOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_1 &&CLUSTER_COST_1>;
-			current = <60240 40410 27260 20180 16850 13710 10710 8290 6060>;
+			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
+			current = <117650 94120 75300 60240 40410 27260 20180 16850 13710 10710 8290 6060>;
 		};
 		cpu@103 {
 			device_type = "cpu";
@@ -216,8 +216,8 @@
 			logical-id = <3>;
 			enable-method = "psci";
 			cpu-idle-states = <&BOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_1 &&CLUSTER_COST_1>;
-			current = <60240 40410 27260 20180 16850 13710 10710 8290 6060>;
+			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
+			current = <117650 94120 75300 60240 40410 27260 20180 16850 13710 10710 8290 6060>;
 		};
 		cpu4: cpu@0 {
 			device_type = "cpu";
@@ -226,9 +226,9 @@
 			logical-id = <4>;
 			enable-method = "psci";
 			cpu-idle-states = <&NONBOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_0 &&CLUSTER_COST_0>;
+			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			#cooling-cells = <2>; /* min followed by max */
-			current = <355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
+			current = <629530 562080 525310 477550 434140 355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
 		};
 		cpu@1 {
 			device_type = "cpu";
@@ -237,8 +237,8 @@
 			logical-id = <5>;
 			enable-method = "psci";
 			cpu-idle-states = <&NONBOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_0 &&CLUSTER_COST_0>;
-			current = <355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
+			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			current = <629530 562080 525310 477550 434140 355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
 		};
 		cpu@2 {
 			device_type = "cpu";
@@ -247,8 +247,8 @@
 			logical-id = <6>;
 			enable-method = "psci";
 			cpu-idle-states = <&NONBOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_0 &&CLUSTER_COST_0>;
-			current = <355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
+			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			current = <629530 562080 525310 477550 434140 355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
 		};
 		cpu@3 {
 			device_type = "cpu";
@@ -257,8 +257,8 @@
 			logical-id = <7>;
 			enable-method = "psci";
 			cpu-idle-states = <&NONBOOTCL_CPU_SLEEP>;
-			sched-energy-costs = <&CPU_COST_0 &&CLUSTER_COST_0>;
-			current = <355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
+			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			current = <629530 562080 525310 477550 434140 355850 295970 251060 233620 201350 177320 137850 111850 100000 88090 78470 69380 58880>;
 		};
 
 		idle-states {
