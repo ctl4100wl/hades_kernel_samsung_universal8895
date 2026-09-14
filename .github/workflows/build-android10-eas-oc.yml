@@ -53,26 +53,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential ccache flex git file libelf-dev libncurses-dev libncurses5 libssl-dev python3 unzip zip
-          echo "TOOLCHAIN=${{ runner.tool_cache }}/gcc-aarch64-4.9" >> "$GITHUB_ENV"
+          echo "TOOLCHAIN=${{ runner.tool_cache }}/linaro-gcc-7.5" >> "$GITHUB_ENV"
 
-      - name: Cache LineageOS GCC 4.9
+      - name: Cache Linaro GCC 7.5
         id: gcc-cache
         uses: actions/cache@v4
         with:
-          path: ${{ runner.tool_cache }}/gcc-aarch64-4.9
-          key: lineage-gcc-aarch64-4.9-v2
+          path: ${{ runner.tool_cache }}/linaro-gcc-7.5
+          key: linaro-gcc-aarch64-7.5-2019.12-v1
 
-      - name: Download proven Android GCC 4.9 toolchain
+      - name: Download Linaro GCC 7.5 toolchain
         if: steps.gcc-cache.outputs.cache-hit != 'true'
         run: |
-          git clone --depth=1 --branch=lineage-19.1 \
-            https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git \
-            "$TOOLCHAIN"
+          mkdir -p "$TOOLCHAIN"
+          curl --http1.1 -fL --retry 5 --retry-delay 2 --retry-all-errors \
+            https://releases.linaro.org/components/toolchain/binaries/7.5-2019.12/aarch64-linux-gnu/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz \
+            -o /tmp/linaro-gcc.tar.xz
+          tar -xJf /tmp/linaro-gcc.tar.xz -C "$TOOLCHAIN" --strip-components=1
+          "$TOOLCHAIN/bin/aarch64-linux-gnu-gcc" --version
 
       - name: Configure
         run: |
           export ARCH=arm64
-          export CROSS_COMPILE="$TOOLCHAIN/bin/aarch64-linux-android-"
+          export CROSS_COMPILE="$TOOLCHAIN/bin/aarch64-linux-gnu-"
           make mrproper
           make HOSTCFLAGS="$HOST_FLAGS" "exynos8895-${DEVICE}_defconfig"
           : > .scmversion
@@ -88,7 +91,7 @@ jobs:
       - name: Build raw Image and DTB
         run: |
           export ARCH=arm64
-          export CROSS_COMPILE="$TOOLCHAIN/bin/aarch64-linux-android-"
+          export CROSS_COMPILE="$TOOLCHAIN/bin/aarch64-linux-gnu-"
           make -j"$(nproc)" HOSTCFLAGS="$HOST_FLAGS"
           make -j"$(nproc)" HOSTCFLAGS="$HOST_FLAGS" Image dtb.img
           test -s arch/arm64/boot/Image
