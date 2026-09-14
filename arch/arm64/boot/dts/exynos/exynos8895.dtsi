@@ -553,6 +553,8 @@
 			pm_qos-max-class = <4>;
 
 			user-default-qos = <715000>;
+			/* Expose OC OPPs, but keep the 40-second boot lock stock. */
+			pm_qos-booting = <1690000>;
 
 			/* auto calibration value */
 			auto-cal-freq = <1053000>;
@@ -597,6 +599,8 @@
 			pm_qos-min-class = <5>;
 			pm_qos-max-class = <6>;
 			pm_qos-jigbooting = <1469000>;
+			/* Expose OC OPPs, but keep the 40-second boot lock stock. */
+			pm_qos-booting = <2314000>;
 
 			/* auto calibration value */
 			auto-cal-freq = <1703000>;
@@ -852,8 +856,12 @@
 		gpu_pmqos_cpu_cluster_num = <2>;
 		gpu_pmu_status_reg_offset = <0x40E4>;
 		gpu_pmu_status_local_pwr_mask = <0xF>; /*0xF << 0*/
-		gpu_max_clock = <546000>;
-		gpu_max_clock_limit = <546000>;
+		/*
+		 * 746 MHz is not present in the firmware ECT list. Use the
+		 * highest real level below it and do not enable 764/839 MHz.
+		 */
+		gpu_max_clock = <683000>;
+		gpu_max_clock_limit = <683000>;
 		gpu_min_clock = <260000>;
 		gpu_dvfs_start_clock = <260000>;
 		gpu_dvfs_bl_config_clock = <260000>;

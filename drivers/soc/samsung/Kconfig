@@ -109,6 +109,33 @@ config ACPM_DVFS
 	help
 	  Support ACPM DVFS for Exynos SoC.
 
+config HADES_EXYNOS8895_OC
+	bool "Hades Exynos8895 frequency overclock"
+	depends on SOC_EXYNOS8895 && CAL_IF && CMUCAL && ACPM_DVFS
+	default n
+	help
+	  Expose only frequency levels already present in the Exynos8895 ECT
+	  DVFS tables. This does not add voltage-table or voltage-step sysfs
+	  controls. Boot PM QoS remains capped to stock frequencies.
+
+config HADES_OC_LITTLE_MAX_KHZ
+	int "LITTLE cluster maximum (kHz)"
+	depends on HADES_EXYNOS8895_OC
+	default 2002000
+
+config HADES_OC_BIG_MAX_KHZ
+	int "big cluster maximum (kHz)"
+	depends on HADES_EXYNOS8895_OC
+	default 2652000
+
+config HADES_OC_G3D_MAX_KHZ
+	int "Mali G71 maximum ECT level (kHz)"
+	depends on HADES_EXYNOS8895_OC
+	default 683000
+	help
+	  746 MHz is not an Exynos8895 ECT/ACPM OPP. 683 MHz is the highest
+	  real firmware level below 746 MHz; 764 MHz would exceed that limit.
+
 config VDD_AUTO_CAL
 	bool "Exynos VDD_AUTO CALIBRATION"
 	depends on ACPM_DVFS

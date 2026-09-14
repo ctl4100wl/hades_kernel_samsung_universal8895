@@ -1,0 +1,25 @@
+Hades Exynos8895 EAS + frequency-only OC
+================================================
+
+Branch: android10-eas-oc
+Base: Hades Android 10 (Linux 4.4.302)
+
+CPU ceilings exposed from existing firmware ECT levels:
+  LITTLE / Cortex-A53: 2002000 kHz (stock 1690000)
+  big / Exynos M2:     2652000 kHz (stock 2314000)
+
+GPU:
+  Requested safety ceiling: 746000 kHz
+  Firmware ECT levels: 839000, 764000, 683000, 572000, 546000, ...
+  Selected maximum: 683000 kHz
+
+The Mali driver requires an exact ECT/ACPM frequency match. 746000 is not
+an actual firmware OPP, while 764000 exceeds the requested safety ceiling.
+The 839000 and 764000 rows remain in the source table but are unreachable
+because both CAL and the Mali device-tree maximum are capped at 683000.
+
+This port intentionally does not expose voltage tables, voltage offsets,
+or regulator-step controls. Firmware continues to own voltage selection.
+CPU boot PM QoS is held at the stock 1690000/2314000 kHz ceilings; higher
+frequencies become available after the boot lock expires and can be chosen
+by schedutil or a kernel manager through the normal cpufreq interfaces.

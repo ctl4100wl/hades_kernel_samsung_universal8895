@@ -2,6 +2,7 @@
 #include <linux/exynos-ss.h>
 #include <soc/samsung/ect_parser.h>
 #include <soc/samsung/cal-if.h>
+#include <dt-bindings/clock/exynos8895.h>
 
 #include "pwrcal-env.h"
 #include "pwrcal-rae.h"
@@ -35,6 +36,89 @@ unsigned int cal_dfs_get_lv_num(unsigned int id)
 {
 	return vclk_get_lv_num(id);
 }
+
+unsigned long cal_dfs_get_hw_max_freq(unsigned int id)
+{
+	return vclk_get_hw_max_freq(id);
+}
+
+int cal_dfs_set_max_freq(unsigned int id, unsigned int freq)
+{
+	return vclk_set_max_freq(id, freq);
+}
+
+#ifdef CONFIG_HADES_EXYNOS8895_OC
+#define HADES_OC_MAX_LEVELS	32
+
+struct hades_oc_domain {
+	const char *name;
+	unsigned int id;
+	unsigned int target;
+};
+
+static unsigned int __init hades_oc_snap_to_level(unsigned int id,
+						  unsigned int target)
+{
+	unsigned long rates[HADES_OC_MAX_LEVELS];
+	unsigned int best = 0;
+	int num, i;
+
+	num = cal_dfs_get_lv_num(id);
+	if (num <= 0 || num > HADES_OC_MAX_LEVELS)
+		return 0;
+	if (cal_dfs_get_rate_table(id, rates) != num)
+		return 0;
+
+	for (i = 0; i < num; i++)
+		if (rates[i] <= target && rates[i] > best)
+			best = rates[i];
+
+	return best;
+}
+
+static void __init hades_oc_unlock_domains(void)
+{
+	struct hades_oc_domain domains[] = {
+		{ "little", ACPM_DVFS_CPUCL1, CONFIG_HADES_OC_LITTLE_MAX_KHZ },
+		{ "big", ACPM_DVFS_CPUCL0, CONFIG_HADES_OC_BIG_MAX_KHZ },
+		{ "gpu", ACPM_DVFS_G3D, CONFIG_HADES_OC_G3D_MAX_KHZ },
+	};
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(domains); i++) {
+		unsigned int stock = cal_dfs_get_max_freq(domains[i].id);
+		unsigned int hw = cal_dfs_get_hw_max_freq(domains[i].id);
+		unsigned int target;
+		int ret;
+
+		if (!stock || !hw) {
+			pr_warn("hades-oc: %s DVFS table unavailable\n",
+				domains[i].name);
+			continue;
+		}
+
+		target = hades_oc_snap_to_level(domains[i].id,
+					      min(domains[i].target, hw));
+		if (!target) {
+			pr_warn("hades-oc: %s target unavailable\n",
+				domains[i].name);
+			continue;
+		}
+
+		ret = cal_dfs_set_max_freq(domains[i].id, target);
+		if (ret) {
+			pr_err("hades-oc: %s ceiling %u kHz failed: %d\n",
+			       domains[i].name, target, ret);
+			continue;
+		}
+
+		pr_info("hades-oc: %s ceiling %u -> %u kHz (ECT max %u)\n",
+			domains[i].name, stock, target, hw);
+	}
+}
+#else
+static inline void hades_oc_unlock_domains(void) { }
+#endif
 
 int cal_dfs_get_bigturbo_max_freq(unsigned int *table)
 {
@@ -292,6 +376,12 @@ int __init cal_if_init(void *dev)
 	ect_parse_binary_header();
 
 	vclk_initialize();
+
+	/*
+	 * Raise only the ECT frequency ceilings before cpufreq and Mali read
+	 * their tables. Voltage data remains owned by firmware.
+	 */
+	hades_oc_unlock_domains();
 
 	if (cal_data_init)
 		cal_data_init();

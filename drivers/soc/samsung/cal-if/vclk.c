@@ -320,6 +320,40 @@ unsigned int vclk_get_max_freq(unsigned int id)
 	return rate;
 }
 
+/*
+ * Return the highest rate carried by the ECT DVFS list, independent of
+ * the ASV level_en[] ceiling applied to this device.
+ */
+unsigned int vclk_get_hw_max_freq(unsigned int id)
+{
+	struct vclk *vclk;
+
+	vclk = cmucal_get_node(id);
+	if (!vclk || !vclk->lut || !vclk->num_rates)
+		return 0;
+
+	return vclk->lut[0].rate;
+}
+
+/*
+ * Move only the domain ceiling. The caller must choose a real ECT level.
+ * Voltage tables and PLL programming are intentionally untouched.
+ */
+int vclk_set_max_freq(unsigned int id, unsigned int freq)
+{
+	struct vclk *vclk;
+
+	vclk = cmucal_get_node(id);
+	if (!vclk || !vclk->lut || !vclk->num_rates)
+		return -EVCLKINVAL;
+
+	if (freq < vclk->min_freq || freq > vclk->lut[0].rate)
+		return -EVCLKINVAL;
+
+	vclk->max_freq = freq;
+	return 0;
+}
+
 unsigned int vclk_get_min_freq(unsigned int id)
 {
 	struct vclk *vclk;

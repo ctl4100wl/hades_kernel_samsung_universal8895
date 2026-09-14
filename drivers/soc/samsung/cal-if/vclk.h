@@ -25,6 +25,8 @@ extern int vclk_set_enable(unsigned int id);
 extern int vclk_set_disable(unsigned int id);
 extern int vclk_initialize(void);
 extern unsigned int vclk_get_max_freq(unsigned int id);
+extern unsigned int vclk_get_hw_max_freq(unsigned int id);
+extern int vclk_set_max_freq(unsigned int id, unsigned int freq);
 extern unsigned int vclk_get_min_freq(unsigned int id);
 extern unsigned int vclk_get_boot_freq(unsigned int id);
 extern unsigned int vclk_get_resume_freq(unsigned int id);
@@ -81,6 +83,16 @@ static inline int vclk_set_disable(unsigned int id)
 static inline unsigned int vclk_get_max_freq(unsigned int id)
 {
 	return 0;
+}
+
+static inline unsigned int vclk_get_hw_max_freq(unsigned int id)
+{
+	return 0;
+}
+
+static inline int vclk_set_max_freq(unsigned int id, unsigned int freq)
+{
+	return -EVCLKINVAL;
 }
 
 static inline unsigned int vclk_get_min_freq(unsigned int id)
