@@ -498,10 +498,10 @@ struct rt_rq {
 	/* Nests inside the rq lock: */
 	raw_spinlock_t rt_runtime_lock;
 
+	struct rq *rq;
 #ifdef CONFIG_RT_GROUP_SCHED
 	unsigned long rt_nr_boosted;
 
-	struct rq *rq;
 	struct task_group *tg;
 	unsigned long propagate_avg;
 #ifndef CONFIG_64BIT
@@ -1077,6 +1077,7 @@ static inline u64 global_rt_runtime(void)
 	return (u64)sysctl_sched_rt_runtime * NSEC_PER_USEC;
 }
 
+#ifdef CONFIG_RT_GROUP_SCHED
 #define rt_entity_is_task(rt_se) (!(rt_se)->my_q)
 
 static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
@@ -1086,6 +1087,7 @@ static inline struct task_struct *rt_task_of(struct sched_rt_entity *rt_se)
 #endif
 	return container_of(rt_se, struct task_struct, rt);
 }
+#endif /* CONFIG_RT_GROUP_SCHED */
 
 static inline int task_current(struct rq *rq, struct task_struct *p)
 {
@@ -1865,33 +1867,26 @@ static inline u64 irq_time_read(int cpu)
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
 
 #ifdef CONFIG_CPU_FREQ
-
-/**
- * Default limit transition rate.
- */
-#define	DEFAULT_LATENCY_MULTIPLIER	50
-
 DECLARE_PER_CPU(struct update_util_data *, cpufreq_update_util_data);
 
-/**
- * cpufreq_update_util - Take a note about CPU utilization changes.
- * @time: Current time.
- * @util: Current utilization.
- * @max: Utilization ceiling.
- *
- * This function is called by the scheduler on every invocation of
- * update_load_avg() on the CPU whose utilization is being updated.
- *
- * It can only be called from RCU-sched read-side critical sections.
- */
-static inline void cpufreq_update_util(u64 time, unsigned long util, unsigned long max)
+static inline void cpufreq_update_util(struct rq *rq, unsigned int flags)
 {
-       struct update_util_data *data;
+	struct update_util_data *data;
 
-       data = rcu_dereference_sched(*this_cpu_ptr(&cpufreq_update_util_data));
-       if (data)
-               data->func(data, time, util, max);
+	data = rcu_dereference_sched(*this_cpu_ptr(&cpufreq_update_util_data));
+	if (data)
+		data->func(data, rq_clock(rq), flags);
 }
+
+static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags)
+{
+	if (cpu_of(rq) == smp_processor_id())
+		cpufreq_update_util(rq, flags);
+}
+#else
+static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
+static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags) {}
+#endif /* CONFIG_CPU_FREQ */
 
 #ifdef CONFIG_CPU_FREQ_SCHEDUTIL_PERFSTAT_TRIGGER
 /**
@@ -1917,10 +1912,7 @@ static inline void cpufreq_trigger_update(u64 time)
 #else
 static inline void cpufreq_trigger_update(u64 time) {}
 #endif
-#else
-static inline void cpufreq_update_util(u64 time, unsigned long util, unsigned long max) {}
-static inline void cpufreq_trigger_update(u64 time) {}
-#endif /* CONFIG_CPU_FREQ */
+
 
 static inline void account_reset_rq(struct rq *rq)
 {
@@ -1976,4 +1968,12 @@ static inline unsigned long cpu_util(int cpu)
 	return (util >= capacity) ? capacity : util;
 }
 #endif
+#endif
+
+#ifdef arch_scale_freq_capacity
+#ifndef arch_scale_freq_invariant
+#define arch_scale_freq_invariant()	(true)
+#endif
+#else
+#define arch_scale_freq_invariant()	(false)
 #endif
