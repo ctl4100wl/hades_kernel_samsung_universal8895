@@ -56,13 +56,17 @@ jobs:
           sudo apt-get install -y bc bison build-essential ccache flex gcc-aarch64-linux-gnu git file libelf-dev libncurses-dev libncurses5 libssl-dev python3 unzip zip
 
       - name: Restore ccache
+        id: ccache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ccache
-          key: ${{ runner.os }}-hades-${{ env.DEVICE }}-${{ github.ref_name }}-${{ github.sha }}
+          key: ${{ runner.os }}-hades-ccache-${{ env.DEVICE }}-toolchain-v1
           restore-keys: |
-            ${{ runner.os }}-hades-${{ env.DEVICE }}-${{ github.ref_name }}-
-            ${{ runner.os }}-hades-${{ env.DEVICE }}-
+            ${{ runner.os }}-hades-ccache-${{ env.DEVICE }}-
+
+      - name: Report cache result
+        run: |
+          echo "ccache exact cache hit: ${{ steps.ccache.outputs.cache-hit }}"
 
       - name: Configure ccache
         run: |
