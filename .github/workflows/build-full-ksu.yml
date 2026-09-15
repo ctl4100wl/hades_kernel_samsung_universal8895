@@ -1,0 +1,134 @@
+name: Build Hades FULL-KSU
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: Device
+        required: true
+        default: greatlte
+        type: choice
+        options:
+          - dreamlte
+          - dream2lte
+          - greatlte
+  push:
+    branches:
+      - FULL-KSU
+    paths:
+      - "arch/**"
+      - "drivers/**"
+      - "include/**"
+      - "kernel/**"
+      - "AnyKernel3/**"
+      - "Makefile"
+      - ".github/workflows/build-full-ksu.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    env:
+      DEVICE: ${{ inputs.device || 'greatlte' }}
+      HOST_FLAGS: "-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -Wno-dangling-pointer -fcommon"
+
+    steps:
+      - name: Checkout Hades FULL-KSU branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Runner information
+        continue-on-error: true
+        run: |
+          uname -a
+          lscpu
+          free -h
+          df -h
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache flex gcc-aarch64-linux-gnu git file libelf-dev libncurses-dev libncurses5 libssl-dev python3 unzip zip
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-hades-${{ env.DEVICE }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-hades-${{ env.DEVICE }}-${{ github.ref_name }}-
+            ${{ runner.os }}-hades-${{ env.DEVICE }}-
+
+      - name: Configure ccache
+        run: |
+          ccache --set-config=cache_dir="$HOME/.cache/ccache"
+          ccache --set-config=max_size=5G
+          ccache --zero-stats
+
+      - name: Verify compiler
+        run: aarch64-linux-gnu-gcc --version
+
+      - name: Configure
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE="aarch64-linux-gnu-"
+          make mrproper
+          make HOSTCFLAGS="$HOST_FLAGS" "exynos8895-${DEVICE}_defconfig"
+          : > .scmversion
+          make HOSTCFLAGS="$HOST_FLAGS" olddefconfig
+          grep -q '^CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y' .config
+          grep -q '^CONFIG_IOSCHED_MAPLE=y' .config
+          grep -q '^CONFIG_DEFAULT_MAPLE=y' .config
+          grep -q '^CONFIG_DEFAULT_IOSCHED="maple"' .config
+          grep -q '^CONFIG_KSU=y' .config
+          grep -q '^CONFIG_KSU_LSM_SECURITY_HOOKS=y' .config
+          grep -q '^CONFIG_HADES_EXYNOS8895_OC=y' .config
+          grep -q '^CONFIG_HADES_OC_LITTLE_MAX_KHZ=2002000' .config
+          grep -q '^CONFIG_HADES_OC_BIG_MAX_KHZ=2652000' .config
+          grep -q '^CONFIG_HADES_OC_G3D_MAX_KHZ=683000' .config
+          ! grep -q '^CONFIG_EXYNOS_OC=' .config
+          make -s kernelrelease
+
+      - name: Build raw Image and DTB
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE="aarch64-linux-gnu-"
+          make -j"$(nproc)" HOSTCFLAGS="$HOST_FLAGS"
+          make -j"$(nproc)" HOSTCFLAGS="$HOST_FLAGS" Image dtb.img
+          test -s arch/arm64/boot/Image
+          test -s arch/arm64/boot/dtb.img
+          file arch/arm64/boot/Image
+          sha256sum arch/arm64/boot/Image arch/arm64/boot/dtb.img
+          if [ -s arch/arm64/boot/Image.gz ]; then
+            echo "Compressed image exists but will not be uploaded."
+          fi
+
+      - name: Package AnyKernel3 flash ZIP
+        run: |
+          git clone --depth 1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+          rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/README.md
+          cp arch/arm64/boot/Image AnyKernel3/Image
+          cp arch/arm64/boot/dtb.img AnyKernel3/dtb.img
+          sed -i 's/^kernel\.string=.*/kernel.string=Hades FULL-KSU for Exynos8895/' AnyKernel3/anykernel.sh
+          cd AnyKernel3
+          zip -r9 "../Hades-FULL-KSU-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
+
+      - name: Show ccache statistics
+        if: always()
+        run: ccache --show-stats
+
+      - name: Upload raw Image-only build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hades-FULL-KSU-${{ env.DEVICE }}-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            arch/arm64/boot/Image
+            arch/arm64/boot/dtb.img
+            Hades-FULL-KSU-${{ env.DEVICE }}-AnyKernel3.zip
