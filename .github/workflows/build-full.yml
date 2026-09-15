@@ -1,4 +1,4 @@
-name: Build Hades Android 10 EAS + OC
+name: Build Hades FULL
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
           - greatlte
   push:
     branches:
-      - android10-eas-oc
+      - FULL
     paths:
       - "arch/**"
       - "drivers/**"
@@ -22,7 +22,7 @@ on:
       - "kernel/**"
       - "AnyKernel3/**"
       - "Makefile"
-      - ".github/workflows/build-android10-eas-oc.yml"
+      - ".github/workflows/build-full.yml"
 
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
       HOST_FLAGS: "-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -Wno-dangling-pointer -fcommon"
 
     steps:
-      - name: Checkout Hades OC branch
+      - name: Checkout Hades FULL branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -82,6 +82,9 @@ jobs:
           : > .scmversion
           make HOSTCFLAGS="$HOST_FLAGS" olddefconfig
           grep -q '^CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y' .config
+          grep -q '^CONFIG_IOSCHED_MAPLE=y' .config
+          grep -q '^CONFIG_DEFAULT_MAPLE=y' .config
+          grep -q '^CONFIG_DEFAULT_IOSCHED="maple"' .config
           grep -q '^CONFIG_HADES_EXYNOS8895_OC=y' .config
           grep -q '^CONFIG_HADES_OC_LITTLE_MAX_KHZ=2002000' .config
           grep -q '^CONFIG_HADES_OC_BIG_MAX_KHZ=2652000' .config
@@ -109,9 +112,9 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/README.md
           cp arch/arm64/boot/Image AnyKernel3/Image
           cp arch/arm64/boot/dtb.img AnyKernel3/dtb.img
-          sed -i 's/^kernel\.string=.*/kernel.string=Hades Android10 EAS OC for Exynos8895/' AnyKernel3/anykernel.sh
+          sed -i 's/^kernel\.string=.*/kernel.string=Hades FULL for Exynos8895/' AnyKernel3/anykernel.sh
           cd AnyKernel3
-          zip -r9 "../Hades-Android10-EAS-OC-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
+          zip -r9 "../Hades-FULL-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
 
       - name: Show ccache statistics
         if: always()
@@ -120,10 +123,10 @@ jobs:
       - name: Upload raw Image-only build
         uses: actions/upload-artifact@v4
         with:
-          name: Hades-Android10-EAS-OC-${{ env.DEVICE }}-${{ github.run_number }}
+          name: Hades-FULL-${{ env.DEVICE }}-${{ github.run_number }}
           if-no-files-found: error
           retention-days: 14
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/dtb.img
-            Hades-Android10-EAS-OC-${{ env.DEVICE }}-AnyKernel3.zip
+            Hades-FULL-${{ env.DEVICE }}-AnyKernel3.zip
