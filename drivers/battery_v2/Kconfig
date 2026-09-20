@@ -17,6 +17,20 @@ config BATTERY_SAMSUNG_V2
 	 To see battery-related functions,
 	 refer to sec_charging_common.h
 
+config SEC_BATTERY_PORT_TEMP_SPOOF
+	bool "Spoof Samsung USB and charger thermistors"
+	default n
+	depends on BATTERY_SAMSUNG_V2
+	help
+	  Force the converted USB-port and charger thermistor temperatures to
+	  25.0 degrees Celsius while leaving their raw ADC readings available.
+
+	  This is a diagnostic workaround for a confirmed false-positive port
+	  temperature fault. It disables thermal protection based on those two
+	  thermistors. Battery-cell temperature, voltage, current, swelling and
+	  charger IC protections remain active. The workaround can be disabled
+	  at boot with sec_battery_port_temp_spoof=0.
+
 config BATTERY_SWELLING
 	bool "prevent battery swelling"
 	help
