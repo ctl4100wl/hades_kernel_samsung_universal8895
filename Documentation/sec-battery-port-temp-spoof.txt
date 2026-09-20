@@ -1,0 +1,30 @@
+Samsung USB/charger thermistor spoof
+====================================
+
+Scope
+-----
+
+This dedicated greatlte build reports 25.0 degrees Celsius for the Samsung
+battery_v2 USB-port and charger thermistor channels. It is intended only for a
+device whose USB-C port, flex cable and thermistor/reference circuit have been
+physically verified and whose high-temperature report is known to be false.
+
+The raw ADC samples remain available through the existing usb_temp_adc and
+chg_temp_adc battery sysfs attributes. Battery-cell temperature and the other
+charger safety checks are not changed.
+
+Emergency disable
+-----------------
+
+Add this kernel command-line parameter to restore the original converted USB
+and charger thermistor values without rebuilding the kernel:
+
+  sec_battery_port_temp_spoof=0
+
+Implementation
+--------------
+
+CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF is enabled only in the greatlte defconfig.
+The substitution happens immediately after ADC-to-temperature conversion in
+drivers/battery_v2/sec_battery.c. SIOP, mixed-temperature and charging-current
+code is intentionally left unchanged.
