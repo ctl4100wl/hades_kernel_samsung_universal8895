@@ -1515,10 +1515,26 @@ static void max77865_aicl_isr_work(struct work_struct *work)
 	struct max77865_charger_data *charger = container_of(work,
 				struct max77865_charger_data, aicl_work.work);
 	u8 aicl_state, aicl_cnt = 0;
+#if IS_ENABLED(CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF)
+	extern int sec_bat_get_force_current_ma(void);
+	int force_current = sec_bat_get_force_current_ma();
+#endif
 
 	pr_info("%s: \n", __func__);
 
 	wake_lock(&charger->aicl_wake_lock);
+#if IS_ENABLED(CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF)
+	if (force_current > 0 && is_not_wireless_type(charger->cable_type)) {
+		max77865_set_input_current(charger, force_current);
+		charger->input_current = force_current;
+		charger->aicl_on = false;
+		charger->slow_charging = false;
+		pr_info("%s: AICL bypassed; forced wired current=%d mA\n",
+			__func__, force_current);
+		wake_unlock(&charger->aicl_wake_lock);
+		return;
+	}
+#endif
 	mutex_lock(&charger->charger_mutex);
 	max77865_update_reg(charger->i2c,
 			    MAX77865_CHG_REG_INT_MASK, MAX77865_AICL_IM, MAX77865_AICL_IM);

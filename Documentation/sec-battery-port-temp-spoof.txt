@@ -10,8 +10,32 @@ device whose USB-C port, flex cable and thermistor/reference circuit have been
 physically verified and whose high-temperature report is known to be false.
 
 The raw ADC samples remain available through the existing usb_temp_adc and
-chg_temp_adc battery sysfs attributes. Battery-cell temperature and the other
-charger safety checks are not changed.
+chg_temp_adc battery sysfs attributes.
+
+Wired current override
+----------------------
+
+The same build forces both the final wired input-current request and charging-
+current request to 3000 mA. The override is applied after SIOP, AFC/PD, AICL,
+mixed-temperature, swelling and normal cable-table calculations.
+
+On greatlte's MAX77865 charger, the AICL worker also honors this parameter and
+does not reduce the wired input-current register while the value is positive.
+Setting the value to 0 restores the original AICL worker immediately.
+
+Change the override at runtime as root:
+
+  echo 0 > /sys/module/sec_battery/parameters/force_current_ma
+
+Value 0 restores the stock current calculation. A positive value requests that
+many milliamps, for example:
+
+  echo 2500 > /sys/module/sec_battery/parameters/force_current_ma
+  echo 3000 > /sys/module/sec_battery/parameters/force_current_ma
+
+The parameter can also be set on the kernel command line:
+
+  sec_battery.force_current_ma=0
 
 Emergency disable
 -----------------
@@ -26,5 +50,6 @@ Implementation
 
 CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF is enabled only in the greatlte defconfig.
 The substitution happens immediately after ADC-to-temperature conversion in
-drivers/battery_v2/sec_battery.c. SIOP, mixed-temperature and charging-current
-code is intentionally left unchanged.
+drivers/battery_v2/sec_battery.c. The 3000 mA override is applied immediately
+before the driver writes CURRENT_MAX and CURRENT_NOW to the charger power
+supply.

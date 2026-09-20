@@ -27,9 +27,9 @@ config SEC_BATTERY_PORT_TEMP_SPOOF
 
 	  This is a diagnostic workaround for a confirmed false-positive port
 	  temperature fault. It disables thermal protection based on those two
-	  thermistors. Battery-cell temperature, voltage, current, swelling and
-	  charger IC protections remain active. The workaround can be disabled
-	  at boot with sec_battery_port_temp_spoof=0.
+	  thermistors. This option also enables a wired charging-current override,
+	  set to 3000 mA by default. Set the force_current_ma module parameter to
+	  0 to restore the stock current calculation.
 
 config BATTERY_SWELLING
 	bool "prevent battery swelling"

@@ -23,6 +23,11 @@ bool sleep_mode = false;
 #define SEC_BATTERY_PORT_TEMP_SPOOF_VALUE	250
 
 static bool sec_battery_port_temp_spoof = true;
+static int sec_battery_force_current_ma = 3000;
+
+module_param_named(force_current_ma, sec_battery_force_current_ma, int, 0644);
+MODULE_PARM_DESC(force_current_ma,
+	"Force wired input and charging current in mA; 0 restores stock limits");
 
 static int __init sec_battery_port_temp_spoof_setup(char *str)
 {
@@ -49,6 +54,21 @@ static int sec_bat_port_temp(struct sec_battery_info *battery,
 		SEC_BATTERY_PORT_TEMP_SPOOF_VALUE);
 	return SEC_BATTERY_PORT_TEMP_SPOOF_VALUE;
 }
+
+static void sec_bat_force_wired_current(struct sec_battery_info *battery,
+					int *input_current,
+					int *charging_current)
+{
+	if (sec_battery_force_current_ma <= 0 ||
+		battery->cable_type == SEC_BATTERY_CABLE_NONE ||
+		is_wireless_type(battery->cable_type))
+		return;
+
+	*input_current = sec_battery_force_current_ma;
+	*charging_current = sec_battery_force_current_ma;
+	pr_info("%s: force wired input/charge current to %d mA\n",
+		__func__, sec_battery_force_current_ma);
+}
 #else
 static inline int sec_bat_port_temp(struct sec_battery_info *battery,
 				    int measured_temp, const char *sensor)
@@ -57,7 +77,26 @@ static inline int sec_bat_port_temp(struct sec_battery_info *battery,
 	(void)sensor;
 	return measured_temp;
 }
+
+static inline void sec_bat_force_wired_current(
+		struct sec_battery_info *battery, int *input_current,
+		int *charging_current)
+{
+	(void)battery;
+	(void)input_current;
+	(void)charging_current;
+}
 #endif
+
+int sec_bat_get_force_current_ma(void)
+{
+#if IS_ENABLED(CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF)
+	return sec_battery_force_current_ma;
+#else
+	return 0;
+#endif
+}
+EXPORT_SYMBOL_GPL(sec_bat_get_force_current_ma);
 
 static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_reset_soc),
@@ -1001,6 +1040,9 @@ static int sec_bat_set_charging_current(struct sec_battery_info *battery)
 			}
 		}
 	}
+
+	/* Apply the test override after SIOP, AFC/PD, AICL and swelling limits. */
+	sec_bat_force_wired_current(battery, &input_current, &charging_current);
 
 	/* In wireless charging, must be set charging current before input current. */
 	if (is_wireless_type(battery->cable_type) &&
