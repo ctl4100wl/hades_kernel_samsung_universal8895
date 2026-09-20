@@ -19,6 +19,7 @@ on:
       - "include/**"
       - "kernel/**"
       - "AnyKernel3/**"
+      - "packaging/**"
       - "Makefile"
       - ".github/workflows/build-full.yml"
 
@@ -112,7 +113,8 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/README.md
           cp arch/arm64/boot/Image AnyKernel3/Image
           cp arch/arm64/boot/dtb.img AnyKernel3/dtb.img
-          sed -i 's/^kernel\.string=.*/kernel.string=Hades Magisk Spoof for greatlte/' AnyKernel3/anykernel.sh
+          cp packaging/anykernel.sh AnyKernel3/anykernel.sh
+          cmp -s packaging/anykernel.sh AnyKernel3/anykernel.sh
           cd AnyKernel3
           zip -r9 "../Hades-Magisk-Spoof-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
 
