@@ -1,4 +1,4 @@
-name: Build Hades FULL-KSU
+name: Build Hades KSU Spoof
 
 on:
   workflow_dispatch:
@@ -9,12 +9,10 @@ on:
         default: greatlte
         type: choice
         options:
-          - dreamlte
-          - dream2lte
           - greatlte
   push:
     branches:
-      - FULL-KSU
+      - ksu-spoof
     paths:
       - "arch/**"
       - "drivers/**"
@@ -36,7 +34,7 @@ jobs:
       HOST_FLAGS: "-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -Wno-dangling-pointer -fcommon"
 
     steps:
-      - name: Checkout Hades FULL-KSU branch
+      - name: Checkout Hades KSU spoof branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -91,6 +89,7 @@ jobs:
           grep -q '^CONFIG_DEFAULT_IOSCHED="maple"' .config
           grep -q '^CONFIG_KSU=y' .config
           grep -q '^CONFIG_KSU_LSM_SECURITY_HOOKS=y' .config
+          grep -q '^CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF=y' .config
           grep -q '^CONFIG_HADES_EXYNOS8895_OC=y' .config
           grep -q '^CONFIG_HADES_OC_LITTLE_MAX_KHZ=2002000' .config
           grep -q '^CONFIG_HADES_OC_BIG_MAX_KHZ=2652000' .config
@@ -118,9 +117,9 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/README.md
           cp arch/arm64/boot/Image AnyKernel3/Image
           cp arch/arm64/boot/dtb.img AnyKernel3/dtb.img
-          sed -i 's/^kernel\.string=.*/kernel.string=Hades FULL-KSU for Exynos8895/' AnyKernel3/anykernel.sh
+          sed -i 's/^kernel\.string=.*/kernel.string=Hades KSU Spoof for greatlte/' AnyKernel3/anykernel.sh
           cd AnyKernel3
-          zip -r9 "../Hades-FULL-KSU-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
+          zip -r9 "../Hades-KSU-Spoof-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
 
       - name: Show ccache statistics
         if: always()
@@ -129,10 +128,10 @@ jobs:
       - name: Upload raw Image-only build
         uses: actions/upload-artifact@v4
         with:
-          name: Hades-FULL-KSU-${{ env.DEVICE }}-${{ github.run_number }}
+          name: Hades-KSU-Spoof-${{ env.DEVICE }}-${{ github.run_number }}
           if-no-files-found: error
           retention-days: 14
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/dtb.img
-            Hades-FULL-KSU-${{ env.DEVICE }}-AnyKernel3.zip
+            Hades-KSU-Spoof-${{ env.DEVICE }}-AnyKernel3.zip
