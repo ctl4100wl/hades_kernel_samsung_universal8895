@@ -1,4 +1,4 @@
-name: Build Hades FULL
+name: Build Hades Magisk Spoof
 
 on:
   workflow_dispatch:
@@ -9,12 +9,10 @@ on:
         default: greatlte
         type: choice
         options:
-          - dreamlte
-          - dream2lte
           - greatlte
   push:
     branches:
-      - FULL
+      - magisk-spoof
     paths:
       - "arch/**"
       - "drivers/**"
@@ -36,7 +34,7 @@ jobs:
       HOST_FLAGS: "-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -Wno-dangling-pointer -fcommon"
 
     steps:
-      - name: Checkout Hades FULL branch
+      - name: Checkout Hades Magisk spoof branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -85,6 +83,8 @@ jobs:
           grep -q '^CONFIG_IOSCHED_MAPLE=y' .config
           grep -q '^CONFIG_DEFAULT_MAPLE=y' .config
           grep -q '^CONFIG_DEFAULT_IOSCHED="maple"' .config
+          grep -q '^CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF=y' .config
+          ! grep -q '^CONFIG_KSU=' .config
           grep -q '^CONFIG_HADES_EXYNOS8895_OC=y' .config
           grep -q '^CONFIG_HADES_OC_LITTLE_MAX_KHZ=2002000' .config
           grep -q '^CONFIG_HADES_OC_BIG_MAX_KHZ=2652000' .config
@@ -112,9 +112,9 @@ jobs:
           rm -rf AnyKernel3/.git AnyKernel3/.github AnyKernel3/README.md
           cp arch/arm64/boot/Image AnyKernel3/Image
           cp arch/arm64/boot/dtb.img AnyKernel3/dtb.img
-          sed -i 's/^kernel\.string=.*/kernel.string=Hades FULL for Exynos8895/' AnyKernel3/anykernel.sh
+          sed -i 's/^kernel\.string=.*/kernel.string=Hades Magisk Spoof for greatlte/' AnyKernel3/anykernel.sh
           cd AnyKernel3
-          zip -r9 "../Hades-FULL-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
+          zip -r9 "../Hades-Magisk-Spoof-${DEVICE}-AnyKernel3.zip" . -x '*.git*' 'README.md'
 
       - name: Show ccache statistics
         if: always()
@@ -123,10 +123,10 @@ jobs:
       - name: Upload raw Image-only build
         uses: actions/upload-artifact@v4
         with:
-          name: Hades-FULL-${{ env.DEVICE }}-${{ github.run_number }}
+          name: Hades-Magisk-Spoof-${{ env.DEVICE }}-${{ github.run_number }}
           if-no-files-found: error
           retention-days: 14
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/dtb.img
-            Hades-FULL-${{ env.DEVICE }}-AnyKernel3.zip
+            Hades-Magisk-Spoof-${{ env.DEVICE }}-AnyKernel3.zip
