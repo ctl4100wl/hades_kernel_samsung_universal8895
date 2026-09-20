@@ -19,6 +19,46 @@
 
 bool sleep_mode = false;
 
+#if IS_ENABLED(CONFIG_SEC_BATTERY_PORT_TEMP_SPOOF)
+#define SEC_BATTERY_PORT_TEMP_SPOOF_VALUE	250
+
+static bool sec_battery_port_temp_spoof = true;
+
+static int __init sec_battery_port_temp_spoof_setup(char *str)
+{
+	int enabled;
+
+	if (!get_option(&str, &enabled))
+		return 0;
+
+	sec_battery_port_temp_spoof = !!enabled;
+	pr_warn("sec_battery: USB/charger temperature spoof %s\n",
+		sec_battery_port_temp_spoof ? "enabled" : "disabled");
+	return 1;
+}
+__setup("sec_battery_port_temp_spoof=", sec_battery_port_temp_spoof_setup);
+
+static int sec_bat_port_temp(struct sec_battery_info *battery,
+			     int measured_temp, const char *sensor)
+{
+	if (!sec_battery_port_temp_spoof)
+		return measured_temp;
+
+	dev_dbg(battery->dev, "%s: %s measured=%d reported=%d\n",
+		__func__, sensor, measured_temp,
+		SEC_BATTERY_PORT_TEMP_SPOOF_VALUE);
+	return SEC_BATTERY_PORT_TEMP_SPOOF_VALUE;
+}
+#else
+static inline int sec_bat_port_temp(struct sec_battery_info *battery,
+				    int measured_temp, const char *sensor)
+{
+	(void)battery;
+	(void)sensor;
+	return measured_temp;
+}
+#endif
+
 static struct device_attribute sec_battery_attrs[] = {
 	SEC_BATTERY_ATTR(batt_reset_soc),
 	SEC_BATTERY_ATTR(batt_read_raw_soc),
@@ -2703,7 +2743,8 @@ static void sec_bat_get_temperature_info(
 		if (battery->pdata->usb_thermal_source) {
 			sec_bat_get_value_by_adc(battery,
 				   SEC_BAT_ADC_CHANNEL_USB_TEMP, &value);
-			battery->usb_temp = value.intval;
+			battery->usb_temp = sec_bat_port_temp(battery,
+				value.intval, "usb");
 			if (battery->vbus_limit && battery->usb_temp <= battery->temp_highlimit_recovery)
 				battery->vbus_limit = false;
 		}
@@ -2711,7 +2752,8 @@ static void sec_bat_get_temperature_info(
 		if (battery->pdata->chg_thermal_source) {
 			sec_bat_get_value_by_adc(battery,
 				   SEC_BAT_ADC_CHANNEL_CHG_TEMP, &value);
-			battery->chg_temp = value.intval;
+			battery->chg_temp = sec_bat_port_temp(battery,
+				value.intval, "charger");
 		}
 
 		if (battery->pdata->wpc_thermal_source) {
